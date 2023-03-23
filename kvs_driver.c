@@ -1,37 +1,26 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/fs.h>
-
+#include <linux/xarray.h>
 #include "kvs_driver.h"
-
-int dev_major = DEV_MAJOR;
-int dev_minor = DEV_MINOR;
-
-module_param(dev_major, int, S_IRUGO);
-module_param(dev_minor, int, S_IRUGO);
-
-
-dev_t dev = MKDEV(12,3);
-dev_t alloc_dev;
-
 int ret; 
+char *content;
+struct xarray array;
 
-static int __init init_function(void)
+int __init init_function(void)
 {
     printk(KERN_ALERT "Hello\n");
-    ret = register_chrdev_region(dev, 2, "kernel_io");
-    printk(KERN_INFO "register %i\n", ret);
-    ret = alloc_chrdev_region(&alloc_dev, 3, 2, "kernel_io");
-    printk(KERN_INFO "allocate %i\n", ret);
+    xa_init(&array);
 
-    printk(KERN_INFO "major %i\n", dev_major);
-    printk(KERN_INFO "minor %i\n", dev_minor);
+    xa_store(&array, 1, "test", 0);
+    content = xa_load(&array, 1);
+    printk(KERN_INFO "content %s\n", content);
+
     return 0;
 }
 
-static void __exit exit_function(void)
+void __exit exit_function(void)
 {
-    unregister_chrdev_region(dev, 2);
     printk(KERN_ALERT "Bye\n");
 }
 
