@@ -1,4 +1,4 @@
-obj-m kvs_driver.c
+obj-m += kvs_driver.o
 KERNEL_DIR=/lib/modules/$(shell uname -r)/build
 PWD=$(shell pwd)
 
