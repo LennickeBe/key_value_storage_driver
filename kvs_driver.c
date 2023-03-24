@@ -2,17 +2,35 @@
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/xarray.h>
+#include <linux/mm.h>
 #include "kvs_driver.h"
 int ret; 
 char *content;
 struct xarray array;
+int errno;
+
+int _add_entry(struct xarray *array, int key, char *value)
+{
+	if ( (errno=xa_err(
+		xa_cmpxchg(array, key, NULL, value, GFP_DMA)
+		         )
+	   ) )
+	{
+		return errno;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+
 
 int __init init_function(void)
 {
     printk(KERN_ALERT "Hello\n");
     xa_init(&array);
-
-    xa_store(&array, 1, "test", 0);
+    _add_entry(&array, 1, "test"); 
     content = xa_load(&array, 1);
     printk(KERN_INFO "content %s\n", content);
 
