@@ -18,6 +18,6 @@ typedef struct
 
 #ifndef DEVICE_NUM
 #define DEV_MAJOR 0
-#define DEV_MINOR 1
+#define DEV_COUNT 1
 #endif
 

@@ -3,11 +3,18 @@
 #include <linux/fs.h>
 #include <linux/xarray.h>
 #include <linux/mm.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <asm/uaccess.h>
 
 #include "kvs_driver.h"
 
 struct xarray array;
 dev_t dev;
+struct cdev c_dev;
+struct class *cl;
+struct device *dev_ret;
 /*
  * Change the value at index 'key' in given xarray.
  */
@@ -36,21 +43,78 @@ int _add_entry(struct xarray *array, int key, char *value)
 }
 
 
+long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+{
+	ioctl_arg io_arg;
+
+	switch(cmd)
+	{
+		case KVS_CHANGE_VAL:
+			if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
+			{
+				return -EACCES;
+			}
+			_change_entry(&array, io_arg.key, io_arg.value);
+			break;
+		default:
+			return -EINVAL;
+	}
+	
+	return 0;
+}
+
+struct file_operations ioctl_fops =
+{
+	.owner = THIS_MODULE,
+	.unlocked_ioctl = my_ioctl
+};
+
+
 int __init init_function(void)
 {
-    int ret; 
+    int ret;
 
     printk(KERN_ALERT "Hello\n");
-    if ((ret = alloc_chrdev_region(&dev, DEV_MAJOR, DEV_MINOR, "kvs_ioctl")))
+    if ((ret = alloc_chrdev_region(&dev, DEV_MAJOR, DEV_COUNT, "kvs_ioctl")))
     {
 	    return ret;
     }
+
+    cdev_init(&c_dev, &ioctl_fops);
+
+    if ((ret = cdev_add(&c_dev, dev, DEV_COUNT)))
+    {
+	    return ret;
+    }
+
+    if (IS_ERR(cl = class_create(THIS_MODULE, "char")))
+    {
+	    cdev_del(&c_dev);
+	    unregister_chrdev_region(dev, DEV_COUNT);
+	    return PTR_ERR(cl);
+    }
+
+    if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "kvs")))
+    {
+	    class_destroy(cl);
+	    cdev_del(&c_dev);
+	    unregister_chrdev_region(dev, DEV_COUNT);
+	    return PTR_ERR(cl);
+    }
+
     return 0;
 }
 
 void __exit exit_function(void)
 {
-    unregister_chrdev_region(dev, DEV_MINOR);
+    char *content;
+    content = xa_load(&array, 1);
+    printk(KERN_INFO "%s\n", content);
+
+    device_destroy(cl, dev);
+    class_destroy(cl);
+    cdev_del(&c_dev);
+    unregister_chrdev_region(dev, DEV_COUNT);
     printk(KERN_ALERT "Bye\n");
 }
 
