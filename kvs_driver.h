@@ -5,14 +5,13 @@
 typedef struct
 {
 	int key;
-	char value[100];
+	char *value;
 } ioctl_arg;
 
 #define KVS_CHANGE_VAL _IOW('k', 1, ioctl_arg *)
 #define KVS_REMOVE_VAL _IOW('k', 2, ioctl_arg *)
 #define KVS_SHOW_VAL _IOR('k', 3, ioctl_arg *)
-#define KVS_SHOW_ARR _IOR('k', 4)
-#define KVS_CLR_ARR _IO('k', 5)
+#define KVS_CLR_ARR _IO('k', 4)
 
 #endif
 

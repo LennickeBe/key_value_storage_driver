@@ -29,7 +29,6 @@ void * _change_entry(struct xarray *array, int key, char *value)
  */
 void * _remove_entry(struct xarray *array, int key)
 {
-	printk(KERN_INFO "remove %i\n", key);
 	return xa_erase(array, key);
 }
 
@@ -46,20 +45,21 @@ int _add_entry(struct xarray *array, int key, char *value)
 
 /*
  * Return the value at index 'key' in the given xarray.
- * Returns "(null)" for empty entries.
+ * Returns NULL for empty entries.
  */
 char * _show_entry(struct xarray *array, int key)
 {
-	char * content;
-        if ((content = xa_load(array, key)))
-	{
-		return content;
-	}
-	else
-	{
-		return "(null)";
-	}
+	return xa_load(array, key);
 }
+
+/*
+ * Remove all entries from the given xarray.
+ */
+void _clr_array(struct xarray *array)
+{
+	xa_destroy(array);
+}
+
 
 
 long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
@@ -81,14 +81,20 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 				return -EACCES;
 			}
 			_remove_entry(&array, io_arg.key);
-			printk(KERN_INFO "test\n");
 			break;
 		case KVS_SHOW_VAL:
-			strcpy(io_arg.value, _show_entry(&array, io_arg.key));
+			if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
+			{
+				return -EACCES;
+			}
+			io_arg.value = _show_entry(&array, io_arg.key);
 			if (copy_to_user((ioctl_arg*)arg, &io_arg, sizeof(ioctl_arg)))
 			{
 				return -EACCES;
 			}
+			break;
+		case KVS_CLR_ARR:
+			_clr_array(&array);
 			break;
 		default:
 			return -EINVAL;
@@ -145,10 +151,6 @@ int __init init_function(void)
 
 void __exit exit_function(void)
 {
-    char *content;
-    content = xa_load(&array, 1);
-    printk(KERN_INFO "%s\n", content);
-
     device_destroy(cl, dev);
     class_destroy(cl);
     cdev_del(&c_dev);
