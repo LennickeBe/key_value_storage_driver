@@ -49,7 +49,7 @@ int _add_entry(struct xarray *array, int key, char *value)
  */
 char * _show_entry(struct xarray *array, int key)
 {
-	return xa_load(array, key);
+	return (char *) xa_load(array, key);
 }
 
 /*
@@ -59,7 +59,6 @@ void _clr_array(struct xarray *array)
 {
 	xa_destroy(array);
 }
-
 
 
 long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
@@ -73,6 +72,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 				return -EACCES;
 			}
 			_change_entry(&array, io_arg.key, io_arg.value);
+			printk(KERN_INFO "Changed:\t%i: %s\n", io_arg.key, io_arg.value);
 			break;
 
 		case KVS_REMOVE_VAL:
@@ -81,6 +81,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 				return -EACCES;
 			}
 			_remove_entry(&array, io_arg.key);
+			printk(KERN_INFO "Removed:\t%i\n", io_arg.key);
 			break;
 		case KVS_SHOW_VAL:
 			if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
@@ -88,13 +89,15 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 				return -EACCES;
 			}
 			io_arg.value = _show_entry(&array, io_arg.key);
-			if (copy_to_user((ioctl_arg*)arg, &io_arg, sizeof(ioctl_arg)))
+			printk(KERN_INFO "Showed:\t%i: %s\n", io_arg.key, io_arg.value);
+			if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg)))
 			{
 				return -EACCES;
 			}
 			break;
 		case KVS_CLR_ARR:
 			_clr_array(&array);
+			printk(KERN_INFO "Cleared");
 			break;
 		default:
 			return -EINVAL;

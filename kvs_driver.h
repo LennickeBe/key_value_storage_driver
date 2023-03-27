@@ -10,7 +10,7 @@ typedef struct
 
 #define KVS_CHANGE_VAL _IOW('k', 1, ioctl_arg *)
 #define KVS_REMOVE_VAL _IOW('k', 2, ioctl_arg *)
-#define KVS_SHOW_VAL _IOR('k', 3, ioctl_arg *)
+#define KVS_SHOW_VAL _IOWR('k', 3, ioctl_arg *)
 #define KVS_CLR_ARR _IO('k', 4)
 
 #endif
