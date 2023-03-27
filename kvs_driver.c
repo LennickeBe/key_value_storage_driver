@@ -29,6 +29,7 @@ void * _change_entry(struct xarray *array, int key, char *value)
  */
 void * _remove_entry(struct xarray *array, int key)
 {
+	printk(KERN_INFO "remove %i\n", key);
 	return xa_erase(array, key);
 }
 
@@ -43,10 +44,27 @@ int _add_entry(struct xarray *array, int key, char *value)
 }
 
 
+/*
+ * Return the value at index 'key' in the given xarray.
+ * Returns "(null)" for empty entries.
+ */
+char * _show_entry(struct xarray *array, int key)
+{
+	char * content;
+        if ((content = xa_load(array, key)))
+	{
+		return content;
+	}
+	else
+	{
+		return "(null)";
+	}
+}
+
+
 long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	ioctl_arg io_arg;
-
 	switch(cmd)
 	{
 		case KVS_CHANGE_VAL:
@@ -55,6 +73,22 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 				return -EACCES;
 			}
 			_change_entry(&array, io_arg.key, io_arg.value);
+			break;
+
+		case KVS_REMOVE_VAL:
+			if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
+			{
+				return -EACCES;
+			}
+			_remove_entry(&array, io_arg.key);
+			printk(KERN_INFO "test\n");
+			break;
+		case KVS_SHOW_VAL:
+			strcpy(io_arg.value, _show_entry(&array, io_arg.key));
+			if (copy_to_user((ioctl_arg*)arg, &io_arg, sizeof(ioctl_arg)))
+			{
+				return -EACCES;
+			}
 			break;
 		default:
 			return -EINVAL;
@@ -77,6 +111,7 @@ int __init init_function(void)
     printk(KERN_ALERT "Hello\n");
     if ((ret = alloc_chrdev_region(&dev, DEV_MAJOR, DEV_COUNT, "kvs_ioctl")))
     {
+
 	    return ret;
     }
 
@@ -84,11 +119,13 @@ int __init init_function(void)
 
     if ((ret = cdev_add(&c_dev, dev, DEV_COUNT)))
     {
+	    printk(KERN_INFO "b\n");
 	    return ret;
     }
 
     if (IS_ERR(cl = class_create(THIS_MODULE, "char")))
     {
+	    printk(KERN_INFO "c\n");
 	    cdev_del(&c_dev);
 	    unregister_chrdev_region(dev, DEV_COUNT);
 	    return PTR_ERR(cl);
@@ -96,6 +133,7 @@ int __init init_function(void)
 
     if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "kvs")))
     {
+	    printk(KERN_INFO "d\n");
 	    class_destroy(cl);
 	    cdev_del(&c_dev);
 	    unregister_chrdev_region(dev, DEV_COUNT);
