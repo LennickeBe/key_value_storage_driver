@@ -1,2 +1,0 @@
-static for _
-code style

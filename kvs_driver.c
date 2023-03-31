@@ -20,8 +20,7 @@ struct device *dev_ret;
 /*
  * Change the value at index 'key' in given xarray.
  */
-static void * change_entry(struct xarray *array, int key, char *value)
-{
+static void * change_entry(struct xarray *array, int key, char *value) {
 	char * value_kernel_space;
 	value_kernel_space = (char *) kmalloc(ENTRY_LEN * sizeof(char), GFP_KERNEL);
 	strncpy(value_kernel_space, value, ENTRY_LEN * sizeof(char));
@@ -32,8 +31,7 @@ static void * change_entry(struct xarray *array, int key, char *value)
 /*
  * Sets entry at index 'key' in the given xarray to NULL.
  */
-static void * remove_entry(struct xarray *array, int key)
-{
+static void * remove_entry(struct xarray *array, int key) {
 	return xa_erase(array, key);
 }
 
@@ -42,8 +40,7 @@ static void * remove_entry(struct xarray *array, int key)
  * Return the value at index 'key' in the given xarray.
  * Returns "(null)" for empty entries.
  */
-static char * show_entry(struct xarray *array, int key)
-{
+static char * show_entry(struct xarray *array, int key) {
 	char * content;
 	if ((content = (char *) xa_load(array, key)))
 	{
@@ -58,88 +55,79 @@ static char * show_entry(struct xarray *array, int key)
 /*
  * Remove all entries from the given xarray.
  */
-static void clr_array(struct xarray *array)
-{
+static void clr_array(struct xarray *array) {
 	xa_destroy(array);
 }
 
 
-static long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
-{
+static long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg) {
 	ioctl_arg io_arg;
-	switch(cmd)
-	{
-		case KVS_CHANGE_VAL:
-			if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
-			{
-				return -EACCES;
-			}
-			change_entry(&array, io_arg.key, io_arg.value);
-			printk(KERN_INFO "Changed:\t%i: %s\n", io_arg.key, io_arg.value);
-			break;
+	switch(cmd) {
+	case KVS_CHANGE_VAL:
+		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
+		{
+			return -EACCES;
+		}
+		change_entry(&array, io_arg.key, io_arg.value);
+		printk(KERN_INFO "Changed:\t%i: %s\n", io_arg.key, io_arg.value);
+		break;
 
-		case KVS_REMOVE_VAL:
-			if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
-			{
-				return -EACCES;
-			}
-			remove_entry(&array, io_arg.key);
-			printk(KERN_INFO "Removed:\t%i\n", io_arg.key);
-			break;
-		case KVS_SHOW_VAL:
-			if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
-			{
-				return -EACCES;
-			}
-			strncpy(io_arg.value, show_entry(&array, io_arg.key), ENTRY_LEN * sizeof(char));
-			printk(KERN_INFO "Showed:\t%i: %s\n", io_arg.key, io_arg.value);
-			if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg)))
-			{
-				return -EACCES;
-			}
-			break;
-		case KVS_CLR_ARR:
-			clr_array(&array);
-			printk(KERN_INFO "Cleared");
-			break;
-		default:
-			return -EINVAL;
+	case KVS_REMOVE_VAL:
+		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
+		{
+			return -EACCES;
+		}
+		remove_entry(&array, io_arg.key);
+		printk(KERN_INFO "Removed:\t%i\n", io_arg.key);
+		break;
+	case KVS_SHOW_VAL:
+		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
+		{
+			return -EACCES;
+		}
+		strncpy(io_arg.value, show_entry(&array, io_arg.key), ENTRY_LEN * sizeof(char));
+		printk(KERN_INFO "Showed:\t%i: %s\n", io_arg.key, io_arg.value);
+		if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg)))
+		{
+			return -EACCES;
+		}
+		break;
+	case KVS_CLR_ARR:
+		clr_array(&array);
+		printk(KERN_INFO "Cleared");
+		break;
+	default:
+		return -EINVAL;
 	}
 	
 	return 0;
 }
 
-static struct file_operations ioctl_fops =
-{
+static struct file_operations ioctl_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = my_ioctl
 };
 
 
-int __init init_function(void)
-{
+int __init init_function(void) {
     int ret;
 
     printk(KERN_ALERT "Hello\n");
-    if ((ret = alloc_chrdev_region(&dev, DEV_MAJOR, DEV_COUNT, "kvs_ioctl")))
-    {
+    if ((ret = alloc_chrdev_region(&dev, DEV_MAJOR, DEV_COUNT, "kvs_ioctl"))) {
 	    return ret;
     }
 
     cdev_init(&c_dev, &ioctl_fops);
 
-    if ((ret = cdev_add(&c_dev, dev, DEV_COUNT)))
-    {
+    if ((ret = cdev_add(&c_dev, dev, DEV_COUNT))) {
 	    goto fail_cdev;
     }
 
-    if (IS_ERR(cl = class_create(THIS_MODULE, "char")))
-    {
+    if (IS_ERR(cl = class_create(THIS_MODULE, "char"))) {
 	    goto fail_class;
     }
 
-    if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "kvs")))
-    {
+    if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "kvs"))) {
 	    goto fail_device;
     }
 
@@ -152,8 +140,7 @@ fail_cdev: unregister_chrdev_region(dev, DEV_COUNT);
 	   return ret;
 }
 
-void __exit exit_function(void)
-{
+void __exit exit_function(void) {
     device_destroy(cl, dev);
     class_destroy(cl);
     cdev_del(&c_dev);
