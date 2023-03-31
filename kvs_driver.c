@@ -20,7 +20,7 @@ struct device *dev_ret;
 /*
  * Change the value at index 'key' in given xarray.
  */
-void * _change_entry(struct xarray *array, int key, char *value)
+static void * change_entry(struct xarray *array, int key, char *value)
 {
 	char * value_kernel_space;
 	value_kernel_space = (char *) kmalloc(ENTRY_LEN * sizeof(char), GFP_KERNEL);
@@ -32,7 +32,7 @@ void * _change_entry(struct xarray *array, int key, char *value)
 /*
  * Sets entry at index 'key' in the given xarray to NULL.
  */
-void * _remove_entry(struct xarray *array, int key)
+static void * remove_entry(struct xarray *array, int key)
 {
 	return xa_erase(array, key);
 }
@@ -42,7 +42,7 @@ void * _remove_entry(struct xarray *array, int key)
  * Return the value at index 'key' in the given xarray.
  * Returns "(null)" for empty entries.
  */
-char * _show_entry(struct xarray *array, int key)
+static char * show_entry(struct xarray *array, int key)
 {
 	char * content;
 	if ((content = (char *) xa_load(array, key)))
@@ -58,13 +58,13 @@ char * _show_entry(struct xarray *array, int key)
 /*
  * Remove all entries from the given xarray.
  */
-void _clr_array(struct xarray *array)
+static void clr_array(struct xarray *array)
 {
 	xa_destroy(array);
 }
 
 
-long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+static long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	ioctl_arg io_arg;
 	switch(cmd)
@@ -74,7 +74,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			{
 				return -EACCES;
 			}
-			_change_entry(&array, io_arg.key, io_arg.value);
+			change_entry(&array, io_arg.key, io_arg.value);
 			printk(KERN_INFO "Changed:\t%i: %s\n", io_arg.key, io_arg.value);
 			break;
 
@@ -83,7 +83,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			{
 				return -EACCES;
 			}
-			_remove_entry(&array, io_arg.key);
+			remove_entry(&array, io_arg.key);
 			printk(KERN_INFO "Removed:\t%i\n", io_arg.key);
 			break;
 		case KVS_SHOW_VAL:
@@ -91,7 +91,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			{
 				return -EACCES;
 			}
-			strncpy(io_arg.value,_show_entry(&array, io_arg.key), ENTRY_LEN * sizeof(char));
+			strncpy(io_arg.value, show_entry(&array, io_arg.key), ENTRY_LEN * sizeof(char));
 			printk(KERN_INFO "Showed:\t%i: %s\n", io_arg.key, io_arg.value);
 			if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg)))
 			{
@@ -99,7 +99,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			}
 			break;
 		case KVS_CLR_ARR:
-			_clr_array(&array);
+			clr_array(&array);
 			printk(KERN_INFO "Cleared");
 			break;
 		default:
@@ -109,7 +109,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
-struct file_operations ioctl_fops =
+static struct file_operations ioctl_fops =
 {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = my_ioctl

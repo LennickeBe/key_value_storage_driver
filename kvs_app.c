@@ -8,7 +8,7 @@
 
 #include "kvs_driver.h"
 
-void _change_entry(int fd, int key, char *content)
+static void change_entry(int fd, int key, char *content)
 {
 	ioctl_arg io_arg;
 
@@ -21,7 +21,7 @@ void _change_entry(int fd, int key, char *content)
 }
 
 
-void _remove_entry(int fd, int key)
+static void remove_entry(int fd, int key)
 {
 	ioctl_arg io_arg;
 
@@ -33,7 +33,7 @@ void _remove_entry(int fd, int key)
 }
 
 
-void _show_entry(int fd, int key)
+static void show_entry(int fd, int key)
 {
 	ioctl_arg io_arg;
 	io_arg.key = key;
@@ -46,7 +46,7 @@ void _show_entry(int fd, int key)
 }
 
 
-void _clr_array(int fd)
+static void clr_array(int fd)
 {
 	ioctl_arg io_arg;
 	
@@ -57,7 +57,7 @@ void _clr_array(int fd)
 }
 
 
-void _print_help(void)
+static void print_help(void)
 {
 	printf("Usage: sudo ./kvs_app [command] [options]\n\n");
 	printf("Change value (key must be an integer, value %i or less chars)\n\n", ENTRY_LEN);
@@ -85,14 +85,14 @@ int main(int argc, char *argv[])
 
 	if ((argc < 2) || (argc > 4))
 	{
-		_print_help();
+		print_help();
 		close(fd);
 		return -1;
 	}
 
 	if (strcmp(argv[1], "help") == 0)
 	{
-		_print_help();
+		print_help();
 		return 0;
 	}
 
@@ -102,17 +102,17 @@ int main(int argc, char *argv[])
 		if (errno!=0)
 		{
 			perror("kvs_app parse index");
-			_print_help();
+			print_help();
 			return -1;
 		}
 		if (strlen(argv[3]) > ENTRY_LEN)
 		{
 			perror("kvs_app add value-too-long");
-			_print_help();
+			print_help();
 			return -1;
 		}
 		strncpy(value, argv[3], ENTRY_LEN * sizeof(char));
-		_change_entry(fd, key, value);
+		change_entry(fd, key, value);
 		close(fd);
 		return 0;
 	}
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 	if (strcmp(argv[1], "show") == 0)
 	{
 		key = strtol(argv[2], NULL, 0);
-		_show_entry(fd, key);
+		show_entry(fd, key);
 		close(fd);
 		return 0;
 	}
@@ -128,14 +128,14 @@ int main(int argc, char *argv[])
 	if (strcmp(argv[1], "rm") == 0)
 	{
 		key = strtol(argv[2], NULL, 0);
-		_remove_entry(fd, key);
+		remove_entry(fd, key);
 		close(fd);
 		return 0;
 	}
 
 	if (strcmp(argv[1], "clear") == 0)
 	{
-		_clr_array(fd);
+		clr_array(fd);
 		close(fd);
 		return 0;
 	}
