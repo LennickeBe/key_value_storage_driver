@@ -23,8 +23,8 @@ struct device *dev_ret;
 void * _change_entry(struct xarray *array, int key, char *value)
 {
 	char * value_kernel_space;
-	value_kernel_space = (char *) kmalloc(100 * sizeof(char), GFP_KERNEL);
-	strncpy(value_kernel_space, value, 100 * sizeof(char));
+	value_kernel_space = (char *) kmalloc(ENTRY_LEN * sizeof(char), GFP_KERNEL);
+	strncpy(value_kernel_space, value, ENTRY_LEN * sizeof(char));
 	return xa_store(array, key, value_kernel_space, GFP_KERNEL);
 }
 
@@ -91,7 +91,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			{
 				return -EACCES;
 			}
-			strncpy(io_arg.value,_show_entry(&array, io_arg.key), 100 * sizeof(char));
+			strncpy(io_arg.value,_show_entry(&array, io_arg.key), ENTRY_LEN * sizeof(char));
 			printk(KERN_INFO "Showed:\t%i: %s\n", io_arg.key, io_arg.value);
 			if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg)))
 			{

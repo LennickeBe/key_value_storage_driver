@@ -13,7 +13,7 @@ void _change_entry(int fd, int key, char *content)
 	ioctl_arg io_arg;
 
 	io_arg.key = key;
-	strncpy(io_arg.value, content, 100 * sizeof(char));
+	strncpy(io_arg.value, content, ENTRY_LEN * sizeof(char));
 	if (ioctl(fd, KVS_CHANGE_VAL, &io_arg) == -1)
 	{
 		perror("kvs_app ioctl change_entry");
@@ -42,9 +42,7 @@ void _show_entry(int fd, int key)
 	{
 		perror("kvs_app ioctl show_entry");
 	}
-	printf("test\n");
-	printf("%i\n", io_arg.key);
-	printf("Index:%i\tValue:%s\n", io_arg.key, io_arg.value);
+	printf("%i:\t%s\n", io_arg.key, io_arg.value);
 }
 
 
@@ -62,7 +60,7 @@ void _clr_array(int fd)
 void _print_help(void)
 {
 	printf("Usage: sudo ./kvs_app [command] [options]\n\n");
-	printf("Change value (key must be an integer, value 100 or less chars)\n\n");
+	printf("Change value (key must be an integer, value %i or less chars)\n\n", ENTRY_LEN);
 	printf("\t sudo ./kvs_app add <key> <value>\n\n");
 	printf("Show value (key must be an integer)\n\n");
 	printf("\t sudo ./kvs_app show <key>\n\n");
@@ -76,7 +74,7 @@ void _print_help(void)
 int main(int argc, char *argv[])
 {
 	int fd, opt, key;
-	char value[100];
+	char value[ENTRY_LEN];
 
 	if ((fd = open("/dev/kvs", O_RDWR)) == -1)
 	{
@@ -107,13 +105,13 @@ int main(int argc, char *argv[])
 			_print_help();
 			return -1;
 		}
-		if (strlen(argv[3]) > 100)
+		if (strlen(argv[3]) > ENTRY_LEN)
 		{
 			perror("kvs_app add value-too-long");
 			_print_help();
 			return -1;
 		}
-		strncpy(value, argv[3], 100 * sizeof(char));
+		strncpy(value, argv[3], ENTRY_LEN * sizeof(char));
 		_change_entry(fd, key, value);
 		close(fd);
 		return 0;

@@ -15,8 +15,9 @@ typedef struct
 
 #endif
 
-#ifndef DEVICE_NUM
+// Device major
 #define DEV_MAJOR 0
+// Number of devices
 #define DEV_COUNT 1
-#endif
-
+// entry length in chars
+#define ENTRY_LEN 100
