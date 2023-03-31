@@ -42,12 +42,9 @@ static void * remove_entry(struct xarray *array, int key) {
  */
 static char * show_entry(struct xarray *array, int key) {
 	char * content;
-	if ((content = (char *) xa_load(array, key)))
-	{
+	if ((content = (char *) xa_load(array, key))) {
 		return content;
-	}
-	else
-	{
+	} else {
 		return "(null)";
 	}
 }
@@ -64,8 +61,7 @@ static long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg) {
 	ioctl_arg io_arg;
 	switch(cmd) {
 	case KVS_CHANGE_VAL:
-		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
-		{
+		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg))) {
 			return -EACCES;
 		}
 		change_entry(&array, io_arg.key, io_arg.value);
@@ -73,22 +69,19 @@ static long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg) {
 		break;
 
 	case KVS_REMOVE_VAL:
-		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
-		{
+		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg))) {
 			return -EACCES;
 		}
 		remove_entry(&array, io_arg.key);
 		printk(KERN_INFO "Removed:\t%i\n", io_arg.key);
 		break;
 	case KVS_SHOW_VAL:
-		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg)))
-		{
+		if (copy_from_user(&io_arg, (ioctl_arg*)arg, sizeof(ioctl_arg))) {
 			return -EACCES;
 		}
 		strncpy(io_arg.value, show_entry(&array, io_arg.key), ENTRY_LEN * sizeof(char));
 		printk(KERN_INFO "Showed:\t%i: %s\n", io_arg.key, io_arg.value);
-		if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg)))
-		{
+		if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg))) {
 			return -EACCES;
 		}
 		break;
