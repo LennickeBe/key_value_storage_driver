@@ -10,7 +10,7 @@
 
 #include "kvs_driver.h"
 
-struct xarray array;
+DEFINE_XARRAY(array);
 dev_t dev;
 struct cdev c_dev;
 struct class *cl;
@@ -120,7 +120,6 @@ int __init init_function(void)
     printk(KERN_ALERT "Hello\n");
     if ((ret = alloc_chrdev_region(&dev, DEV_MAJOR, DEV_COUNT, "kvs_ioctl")))
     {
-
 	    return ret;
     }
 
@@ -128,28 +127,26 @@ int __init init_function(void)
 
     if ((ret = cdev_add(&c_dev, dev, DEV_COUNT)))
     {
-	    printk(KERN_INFO "b\n");
-	    return ret;
+	    goto fail_cdev;
     }
 
     if (IS_ERR(cl = class_create(THIS_MODULE, "char")))
     {
-	    printk(KERN_INFO "c\n");
-	    cdev_del(&c_dev);
-	    unregister_chrdev_region(dev, DEV_COUNT);
-	    return PTR_ERR(cl);
+	    goto fail_class;
     }
 
     if (IS_ERR(dev_ret = device_create(cl, NULL, dev, NULL, "kvs")))
     {
-	    printk(KERN_INFO "d\n");
-	    class_destroy(cl);
-	    cdev_del(&c_dev);
-	    unregister_chrdev_region(dev, DEV_COUNT);
-	    return PTR_ERR(cl);
+	    goto fail_device;
     }
 
     return 0;
+
+fail_device: class_destroy(cl);
+fail_class: cdev_del(&c_dev);
+	    ret = PTR_ERR(cl);
+fail_cdev: unregister_chrdev_region(dev, DEV_COUNT);
+	   return ret;
 }
 
 void __exit exit_function(void)
