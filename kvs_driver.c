@@ -6,6 +6,8 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/errno.h>
+#include <linux/string.h>
+#include <linux/slab.h>
 #include <asm/uaccess.h>
 
 #include "kvs_driver.h"
@@ -20,7 +22,10 @@ struct device *dev_ret;
  */
 void * _change_entry(struct xarray *array, int key, char *value)
 {
-	return xa_store(array, key, value, GFP_DMA);
+	char * value_kernel_space;
+	value_kernel_space = (char *) kmalloc(100 * sizeof(char), GFP_KERNEL);
+	strncpy(value_kernel_space, value, 100 * sizeof(char));
+	return xa_store(array, key, value_kernel_space, GFP_KERNEL);
 }
 
 
@@ -39,17 +44,25 @@ void * _remove_entry(struct xarray *array, int key)
  */
 int _add_entry(struct xarray *array, int key, char *value)
 {
-	return xa_insert(array, key, value, GFP_DMA);
+	return xa_insert(array, key, value, GFP_KERNEL);
 }
 
 
 /*
  * Return the value at index 'key' in the given xarray.
- * Returns NULL for empty entries.
+ * Returns "(null)" for empty entries.
  */
 char * _show_entry(struct xarray *array, int key)
 {
-	return (char *) xa_load(array, key);
+	char * content;
+	if ((content = (char *) xa_load(array, key)))
+	{
+		return content;
+	}
+	else
+	{
+		return "(null)";
+	}
 }
 
 /*
@@ -88,7 +101,7 @@ long my_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			{
 				return -EACCES;
 			}
-			io_arg.value = _show_entry(&array, io_arg.key);
+			strncpy(io_arg.value,_show_entry(&array, io_arg.key), 100 * sizeof(char));
 			printk(KERN_INFO "Showed:\t%i: %s\n", io_arg.key, io_arg.value);
 			if (copy_to_user((ioctl_arg*)arg, &io_arg,  sizeof(ioctl_arg)))
 			{

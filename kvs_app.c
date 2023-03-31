@@ -13,7 +13,7 @@ void _change_entry(int fd, int key, char *content)
 	ioctl_arg io_arg;
 
 	io_arg.key = key;
-	io_arg.value = content;
+	strncpy(io_arg.value, content, 100 * sizeof(char));
 	if (ioctl(fd, KVS_CHANGE_VAL, &io_arg) == -1)
 	{
 		perror("kvs_app ioctl change_entry");
@@ -69,29 +69,12 @@ void _print_help(void)
 int main(int argc, char *argv[])
 {
 	int fd, opt, key;
-	char *value;
+	char value[100];
 
 	if ((fd = open("/dev/kvs", O_RDWR)) == -1)
 	{
 		perror("kvs_app open /dev/kvs");
 		return -1;
-	}
-
-	if (1)
-	{
-		_change_entry(fd, 1, "test");
-		_show_entry(fd, 1);
-		_remove_entry(fd, 1);
-		_show_entry(fd, 1);
-		_change_entry(fd, 1, "test");
-		_change_entry(fd, 2, "foo");
-		_show_entry(fd, 1);
-		_show_entry(fd, 2);
-		_clr_array(fd);
-		_show_entry(fd, 1);
-		_show_entry(fd, 2);
-		close(fd);
-		return 0;
 	}
 
 
@@ -112,7 +95,13 @@ int main(int argc, char *argv[])
 			_print_help();
 			return -1;
 		}
-		value = argv[3];
+		if (strlen(argv[3]) > 100)
+		{
+			perror("kvs_app add value-too-long");
+			_print_help();
+			return -1;
+		}
+		strncpy(value, argv[3], 100 * sizeof(char));
 		_change_entry(fd, key, value);
 		close(fd);
 		return 0;

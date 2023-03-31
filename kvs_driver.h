@@ -5,7 +5,7 @@
 typedef struct
 {
 	int key;
-	char *value;
+	char value[100];
 } ioctl_arg;
 
 #define KVS_CHANGE_VAL _IOW('k', 1, ioctl_arg *)
