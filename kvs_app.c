@@ -61,8 +61,15 @@ void _clr_array(int fd)
 
 void _print_help(void)
 {
- 	// TODO
-	printf("help");
+	printf("Usage: sudo ./kvs_app [command] [options]\n\n");
+	printf("Change value (key must be an integer, value 100 or less chars)\n\n");
+	printf("\t sudo ./kvs_app add <key> <value>\n\n");
+	printf("Show value (key must be an integer)\n\n");
+	printf("\t sudo ./kvs_app show <key>\n\n");
+	printf("Remove value (key must be an integer)\n\n");
+	printf("\t sudo ./kvs_app rm <key>\n\n");
+	printf("Clear entire xarray\n\n");
+	printf("\t sudo ./kvs_app clear\n\n");
 }
 
 
@@ -85,6 +92,11 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	if (strcmp(argv[1], "help") == 0)
+	{
+		_print_help();
+		return 0;
+	}
 
 	if (strcmp(argv[1], "add") == 0)
 	{
@@ -131,4 +143,6 @@ int main(int argc, char *argv[])
 	}
 
 	close(fd);
+	printf("Could not match given arguments to commands.\nUse \"sudo ./kvs_app help\" to show usage.\n");
+	return 0;
 }

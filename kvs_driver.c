@@ -39,16 +39,6 @@ void * _remove_entry(struct xarray *array, int key)
 
 
 /*
- * Adds the value at index 'key' to the given xarray
- * if there is no value present at that index.
- */
-int _add_entry(struct xarray *array, int key, char *value)
-{
-	return xa_insert(array, key, value, GFP_KERNEL);
-}
-
-
-/*
  * Return the value at index 'key' in the given xarray.
  * Returns "(null)" for empty entries.
  */
